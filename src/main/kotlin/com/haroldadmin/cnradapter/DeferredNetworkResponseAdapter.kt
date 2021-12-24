@@ -36,12 +36,12 @@ internal class DeferredNetworkResponseAdapter<S, E>(
 
         call.enqueue(object : Callback<S> {
             override fun onResponse(call: Call<S>, response: Response<S>) {
-                val networkResponse = response.asNetworkResponse(successType, errorConverter)
+                val networkResponse = response.asNetworkResponse(errorConverter)
                 deferred.complete(networkResponse)
             }
 
             override fun onFailure(call: Call<S>, t: Throwable) {
-                val networkResponse = t.asNetworkResponse<S, E>(successType, errorConverter)
+                val networkResponse = t.asNetworkResponse(errorConverter)
                 deferred.complete(networkResponse)
             }
         })

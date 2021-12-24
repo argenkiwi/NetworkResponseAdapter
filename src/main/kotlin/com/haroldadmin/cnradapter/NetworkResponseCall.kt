@@ -22,12 +22,12 @@ internal class NetworkResponseCall<S, E>(
     override fun enqueue(callback: Callback<NetworkResponse<S, E>>) = synchronized(this) {
         backingCall.enqueue(object : Callback<S> {
             override fun onResponse(call: Call<S>, response: Response<S>) {
-                val networkResponse = response.asNetworkResponse(successBodyType, errorConverter)
+                val networkResponse = response.asNetworkResponse(errorConverter)
                 callback.onResponse(this@NetworkResponseCall, Response.success(networkResponse))
             }
 
             override fun onFailure(call: Call<S>, throwable: Throwable) {
-                val networkResponse = throwable.asNetworkResponse<S, E>(successBodyType, errorConverter)
+                val networkResponse = throwable.asNetworkResponse(errorConverter)
                 callback.onResponse(this@NetworkResponseCall, Response.success(networkResponse))
             }
         })
@@ -53,7 +53,7 @@ internal class NetworkResponseCall<S, E>(
 
     override fun execute(): Response<NetworkResponse<S, E>> {
         val retrofitResponse = backingCall.execute()
-        val networkResponse = retrofitResponse.asNetworkResponse(successBodyType, errorConverter)
+        val networkResponse = retrofitResponse.asNetworkResponse(errorConverter)
         return Response.success(networkResponse)
     }
 

@@ -13,12 +13,13 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
-import retrofit2.*
+import retrofit2.CallAdapter
+import retrofit2.Retrofit
 import retrofit2.http.GET
 import java.io.IOException
 import java.time.Duration
 
-class DeferredNetworkResponseAdapterTest : DescribeSpec({
+public class DeferredNetworkResponseAdapterTest : DescribeSpec({
     describe(DeferredNetworkResponseAdapter::class.java.simpleName) {
         it("should return success type correctly") {
             val converterFactory = StringConverterFactory()
@@ -90,7 +91,7 @@ class DeferredNetworkResponseAdapterTest : DescribeSpec({
             )
 
             val response = service.getTextAsync().await()
-            response.shouldBeInstanceOf<NetworkResponse.Success<String, String>>()
+            response.shouldBeInstanceOf<NetworkResponse.Success<String>>()
             response.body shouldBe "Test Message"
         }
 
@@ -103,19 +104,19 @@ class DeferredNetworkResponseAdapterTest : DescribeSpec({
             )
 
             val response = service.getTextAsync().await()
-            response.shouldBeInstanceOf<NetworkResponse.ServerError<String, String>>()
+            response.shouldBeInstanceOf<NetworkResponse.ServerError<String>>()
             response.body shouldBe "Not Found"
         }
 
         it("should handle 200 (with body) and 204 (no body) responses correctly") {
             server.enqueue(MockResponse().setBody("Test Message").setResponseCode(200))
             val response = service.getTextAsync().await()
-            response.shouldBeInstanceOf<NetworkResponse.Success<String, String>>()
+            response.shouldBeInstanceOf<NetworkResponse.Success<String>>()
             response.body shouldBe "Test Message"
 
             server.enqueue(MockResponse().setResponseCode(204))
             val noBodyResponse = service.getTextAsync().await()
-            noBodyResponse.shouldBeInstanceOf<NetworkResponse.ServerError<String, String>>()
+            noBodyResponse.shouldBeInstanceOf<NetworkResponse.Success<String>>()
             noBodyResponse.body shouldBe null
         }
 
@@ -125,7 +126,7 @@ class DeferredNetworkResponseAdapterTest : DescribeSpec({
             )
 
             val response = service.getTextAsync().await()
-            response.shouldBeInstanceOf<NetworkResponse.NetworkError<String, String>>()
+            response.shouldBeInstanceOf<NetworkResponse.NetworkError>()
             response.error.shouldBeInstanceOf<IOException>()
         }
     }

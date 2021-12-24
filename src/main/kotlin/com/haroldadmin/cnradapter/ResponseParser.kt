@@ -5,24 +5,18 @@ import retrofit2.Converter
 import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
-import java.lang.reflect.Type
 
 /**
  * Maps a [Response] to a [NetworkResponse].
- *
  *
  * @param errorConverter Retrofit provided body converter to parse the error body of the response
  * @return A subtype of [NetworkResponse] based on the response of the network request
  */
 internal fun <S, E> Response<S>.asNetworkResponse(
-    successType: Type,
     errorConverter: Converter<ResponseBody, E>
-): NetworkResponse<S, E> {
-    return if (!isSuccessful) {
-        parseUnsuccessfulResponse(this, errorConverter)
-    } else {
-        parseSuccessfulResponse(this, successType)
-    }
+) = when {
+    isSuccessful -> NetworkResponse.Success(body(), this)
+    else -> parseUnsuccessfulResponse(this, errorConverter)
 }
 
 /**
@@ -41,8 +35,9 @@ internal fun <S, E> Response<S>.asNetworkResponse(
 private fun <S, E> parseUnsuccessfulResponse(
     response: Response<S>,
     errorConverter: Converter<ResponseBody, E>
-): NetworkResponse.Error<S, E> {
-    val errorBody: ResponseBody = response.errorBody() ?: return NetworkResponse.ServerError(null, response)
+): NetworkResponse.Error<E> {
+    val errorBody: ResponseBody =
+        response.errorBody() ?: return NetworkResponse.ServerError(null, response)
 
     return try {
         val convertedBody = errorConverter.convert(errorBody)
@@ -53,51 +48,23 @@ private fun <S, E> parseUnsuccessfulResponse(
 }
 
 /**
- * Maps a successful [Response] to [NetworkResponse]
- *
- * Control flow:
- *
- * - If [response] body is null:
- *      - If [successType] is [Unit], return [NetworkResponse.Success] with [Unit] as the body
- *      - Else return a [NetworkResponse.ServerError] with a null body
- * - If response body is not null, return [NetworkResponse.Success] with the parsed body
- */
-private fun <S, E> parseSuccessfulResponse(response: Response<S>, successType: Type): NetworkResponse<S, E> {
-    val responseBody: S? = response.body()
-    if (responseBody == null) {
-        if (successType === Unit::class.java) {
-            @Suppress("UNCHECKED_CAST")
-            return NetworkResponse.Success<Unit, E>(Unit, response) as NetworkResponse<S, E>
-        }
-
-        return NetworkResponse.ServerError(null, response)
-    }
-
-    return NetworkResponse.Success(responseBody, response)
-}
-
-/**
  * Maps a [Throwable] to a [NetworkResponse].
  *
  * - If the error is [IOException], return [NetworkResponse.NetworkError].
  * - If the error is [HttpException], attempt to parse the underlying response and return the result
  * - Else return [NetworkResponse.UnknownError] that wraps the original error
  */
-internal fun <S, E> Throwable.asNetworkResponse(
-    successType: Type,
+internal fun <E> Throwable.asNetworkResponse(
     errorConverter: Converter<ResponseBody, E>,
-): NetworkResponse<S, E> {
-    return when (this) {
-        is IOException -> NetworkResponse.NetworkError(this)
-        is HttpException -> {
-            val response = response()
-            if (response == null) {
-                NetworkResponse.ServerError(null, null)
-            } else {
-                @Suppress("UNCHECKED_CAST")
-                response.asNetworkResponse(successType, errorConverter) as NetworkResponse<S, E>
+) = when (this) {
+    is IOException -> NetworkResponse.NetworkError(this)
+    is HttpException -> response()
+        ?.asNetworkResponse(errorConverter).let {
+            when (it) {
+                is NetworkResponse.Error -> it
+                else -> null
             }
         }
-        else -> NetworkResponse.UnknownError(this)
-    }
+        ?: NetworkResponse.ServerError(null, null)
+    else -> NetworkResponse.UnknownError(this)
 }

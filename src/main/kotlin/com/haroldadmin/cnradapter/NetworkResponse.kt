@@ -24,7 +24,7 @@ import java.io.IOException
  * - Internet connectivity problems, the [NetworkResponse] is [NetworkResponse.NetworkError]
  * - Any other problems (e.g. Serialization errors), the [NetworkResponse] is [NetworkResponse.UnknownError].
  */
-public sealed interface NetworkResponse<S, E> {
+public sealed interface NetworkResponse<out S, out E> {
     /**
      * The result of a successful network request.
      *
@@ -35,16 +35,16 @@ public sealed interface NetworkResponse<S, E> {
      * @param body The parsed body of the successful response.
      * @param response The original [Response] from Retrofit
      */
-    public data class Success<S, E>(
-        public val body: S,
-        public val response: Response<*>
-    ) : NetworkResponse<S, E> {
+    public data class Success<S>(
+        val body: S?,
+        val response: Response<*>
+    ) : NetworkResponse<S, Nothing> {
         /**
          * The status code returned by the server.
          *
          * Alias for [Response.code] of the original response
          */
-        public val code: Int
+        val code: Int
             get() = response.code()
 
         /**
@@ -52,7 +52,7 @@ public sealed interface NetworkResponse<S, E> {
          *
          * Alias for [Response.headers] of the original response
          */
-        public val headers: Headers
+        val headers: Headers
             get() = response.headers()
     }
 
@@ -63,7 +63,7 @@ public sealed interface NetworkResponse<S, E> {
      * body ([ServerError]), or due to a connectivity error ([NetworkError]), or due to an unknown
      * error ([UnknownError]).
      */
-    public sealed interface Error<S, E> : NetworkResponse<S, E> {
+    public sealed interface Error<out E> : NetworkResponse<Nothing, E> {
         /**
          * The body of the failed network request, if available.
          */
@@ -81,23 +81,23 @@ public sealed interface NetworkResponse<S, E> {
      * This result may or may not contain a [body], depending on the body
      * supplied by the server.
      */
-    public data class ServerError<S, E>(
-        public override val body: E?,
-        public val response: Response<*>?,
-    ) : Error<S, E> {
+    public data class ServerError<E>(
+        override val body: E?,
+        val response: Response<*>?,
+    ) : Error<E> {
         /**
          * The status code returned by the server.
          *
          * Alias for [Response.code] of the original response
          */
-        public val code: Int? = response?.code()
+        val code: Int? = response?.code()
 
         /**
          * The headers returned by the server.
          *
          * Alias for [Response.headers] of the original response
          */
-        public val headers: Headers? = response?.headers()
+        val headers: Headers? = response?.headers()
 
         /**
          * Always `null` for a [ServerError].
@@ -108,27 +108,27 @@ public sealed interface NetworkResponse<S, E> {
     /**
      * The result of a network connectivity error
      */
-    public data class NetworkError<S, E>(
-        public override val error: IOException,
-    ) : Error<S, E> {
+    public data class NetworkError(
+        override val error: IOException,
+    ) : Error<Nothing> {
 
         /**
          * Always `null` for a [NetworkError]
          */
-        override val body: E? = null
+        override val body: Nothing? = null
     }
 
     /**
      * Result of an unknown error during a network request
      * (e.g. Serialization errors)
      */
-    public data class UnknownError<S, E>(
-        public override val error: Throwable
-    ) : Error<S, E> {
+    public data class UnknownError(
+        override val error: Throwable
+    ) : Error<Nothing> {
         /**
          * Always `null` for an [UnknownError]
          */
-        override val body: E? = null
+        override val body: Nothing? = null
     }
 }
 
