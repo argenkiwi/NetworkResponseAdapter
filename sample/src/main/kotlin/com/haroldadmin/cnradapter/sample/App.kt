@@ -12,7 +12,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
-val url = "https://jsonplaceholder.typicode.com"
+const val url = "https://jsonplaceholder.typicode.com"
 val contentType = "application/json".toMediaType()
 
 val loggingInterceptor = { chain: Interceptor.Chain ->
@@ -49,8 +49,8 @@ fun main() = runBlocking {
         is NetworkResponse.Error -> {
             println("Failed to get posts: $postsResponse")
         }
-        is NetworkResponse.Success ->  {
-            println("Fetched ${postsResponse.body.size} posts")
+        is NetworkResponse.Success -> {
+            println("Fetched ${postsResponse.body?.size ?: 0} posts")
         }
     }
 

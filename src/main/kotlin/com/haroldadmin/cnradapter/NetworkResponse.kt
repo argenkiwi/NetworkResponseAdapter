@@ -15,8 +15,8 @@ import java.io.IOException
  * otherwise.
  *
  * If the network request was successful and Retrofit successfully deserialized the body, the [NetworkResponse]
- * is [NetworkResponse.Success]. If you do not expect a successful response to contain a body, you must specify
- * [S] as [Unit] or use [CompletableResponse].
+ * is [NetworkResponse.Success]. If you do not expect a successful response to contain a body, you may specify
+ * [S] as [Unit]? or use [CompletableResponse].
  *
  * If the network request failed due to:
  * - Non-2xx response from the server, the [NetworkResponse] is [NetworkResponse.ServerError] containing the
@@ -133,8 +133,8 @@ public sealed interface NetworkResponse<out S, out E> {
 }
 
 /**
- * An alias for a [NetworkResponse] with no expected response body ([Unit]).
+ * An alias for a [NetworkResponse] with no expected response body.
  *
  * Useful for specifying return types of API calls that do not return a useful value.
  */
-public typealias CompletableResponse<E> = NetworkResponse<Unit, E>
+public typealias CompletableResponse<E> = NetworkResponse<*, E>

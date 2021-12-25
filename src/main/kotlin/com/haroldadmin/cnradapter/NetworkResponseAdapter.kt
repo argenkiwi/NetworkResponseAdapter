@@ -11,7 +11,7 @@ import java.lang.reflect.Type
  *
  * Delegates most of its functionality to a [NetworkResponseCall].
  */
-internal class NetworkResponseAdapter<S : Any, E : Any>(
+internal class NetworkResponseAdapter<S, E>(
     private val successType: Type,
     private val errorBodyConverter: Converter<ResponseBody, E>
 ) : CallAdapter<S, Call<NetworkResponse<S, E>>> {
